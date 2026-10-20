@@ -21,5 +21,9 @@ aren-supabase etl                                   # corre el ETL y dice qué h
 aren-supabase subir ~/apps/finanzas etl             # después de cambiar un archivo de etl/
 ```
 
+**Acceso desde apps** (`esquema/070_acceso.sql`): RLS en todas las tablas y vistas con `security_invoker`. Sin login no se ve
+nada; con un login de Google solo entran los mails de `_cuentas_habilitadas`, que maneja Aren. Después de crear una tabla o
+vista, volver a correr ese archivo.
+
 Si editás un archivo de `etl/`, `vistas/` o `procedimientos/`, subilo (o pedíselo a Aren) con `aren-supabase subir`.
 Un cambio de tablas va como SQL aparte (`alter table …`) y después se refleja en `esquema/`.
