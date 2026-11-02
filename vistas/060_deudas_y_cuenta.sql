@@ -1,9 +1,9 @@
 -- Deudas, gastos compartidos, sueldo, opciones para los formularios y los movimientos de la cuenta bancaria.
 
-create or replace view tablero_sueldo as
+create or replace view tablero_sueldo with (security_invoker = true) as
 select fecha_cobro, bruto_ars, retencion_pct, neto_ars from plata_sueldo order by fecha_cobro desc, id desc;
 
-create or replace view tablero_compartidos as
+create or replace view tablero_compartidos with (security_invoker = true) as
 select substr(c.fecha, 1, 7) as periodo, 'comp:' || c.id as clave, c.fecha, c.persona, c.descripcion, c.categoria, cat.emoji,
   c.total, c.mi_parte, c.pago, 'deuda:' || d.id as deuda, d.monto as deuda_monto,
   case d.sentido when 'me_deben' then 'te_deben' when 'le_debo' then 'debes' end as sentido,
@@ -14,7 +14,7 @@ from bronce_compartidos c
   left join plata_saldos_deuda s on s.deuda_id = d.id;
 
 -- lo que resta de cada deuda: el monto menos los pagos parciales y las compensaciones
-create or replace view tablero_deudas as
+create or replace view tablero_deudas with (security_invoker = true) as
 with r as (
   select d.*, round(d.monto - coalesce((select sum(x.monto) from plata_pagos_deuda x where x.deuda_id = d.id), 0)
                             - coalesce((select sum(x.monto) from plata_compensaciones_deuda x where x.deuda_id = d.id), 0), 2) as resta
@@ -32,7 +32,7 @@ from r d
   left join bronce_saldos_deuda bs on bs.id = s.bronce_id;
 
 -- las opciones de los formularios, las más usadas primero
-create or replace view tablero_opciones as
+create or replace view tablero_opciones with (security_invoker = true) as
 select tipo, valor, emoji, usos from (
   select 'categoria' as tipo, c.nombre as valor, c.emoji,
     (select count(*) from oro_movimientos m where m.categoria_id = c.id)
@@ -53,7 +53,7 @@ select tipo, valor, emoji, usos from (
 order by tipo, usos desc, orden;
 
 -- lo que entra y sale de la cuenta bancaria (no la tarjeta)
-create or replace view oro_movimientos_cuenta as
+create or replace view oro_movimientos_cuenta with (security_invoker = true) as
 select g.fecha, 'sale' as sentido, round(g.monto_ars, 2) as monto_ars, g.descripcion, m.nombre as origen, 'gasto:' || g.id as ref
 from plata_gastos g join dim_medio m on m.id = g.medio_id
 where m.nombre in ('debito', 'transferencia') and g.origen = 'bronce_gastos'

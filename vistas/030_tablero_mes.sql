@@ -1,12 +1,12 @@
 -- El mes en el tablero: en qué se fue la plata, lo que falta pagar, las series para los gráficos y los movimientos.
 
-create or replace view tablero_categorias as
+create or replace view tablero_categorias with (security_invoker = true) as
 select mes(m.fecha) as periodo, c.nombre as categoria, c.emoji, round(sum(m.monto_ars), 2) as monto
 from oro_movimientos m join dim_categoria c on c.id = m.categoria_id
 where m.tipo = 'gasto'
 group by 1, 2, 3;
 
-create or replace view tablero_resumen as
+create or replace view tablero_resumen with (security_invoker = true) as
 with ms as (select mes_mas('2026-01', g) as p from generate_series(0, greatest(mes_diff(mes_mas(mes_actual(), 6), '2026-01'), 0)) as g),
 reales as (select mes(fecha) as p, sum(monto_ars) as r from oro_movimientos where tipo = 'gasto' group by 1)
 select ms.p as periodo, round(coalesce(reales.r, 0), 2) as realizado,
@@ -14,7 +14,7 @@ select ms.p as periodo, round(coalesce(reales.r, 0), 2) as realizado,
                   where c.periodo = ms.p and c.pagado = 0 and c.periodo >= mes_actual()), 0), 2) as falta_pagar
 from ms left join reales on reales.p = ms.p;
 
-create or replace view tablero_series as
+create or replace view tablero_series with (security_invoker = true) as
 with ms as (select mes_mas('2026-01', g) as p from generate_series(0, greatest(mes_diff(mes_mas(mes_actual(), 6), '2026-01'), 0)) as g)
 select 'total' as serie_tipo, 'Total gastado' as serie, '📊' as emoji, periodo, realizado as monto, 'ARS' as moneda from tablero_resumen
 union all
@@ -34,7 +34,7 @@ select 'tarjeta', t.nombre_visible, '💳', c.periodo, round(sum(c.monto_ars), 2
 from oro_compromisos_mes c join dim_tarjeta t on 'tarjeta:' || t.id = c.clave
 where c.tipo = 'tarjeta' group by t.nombre_visible, c.periodo;
 
-create or replace view tablero_pagos as
+create or replace view tablero_pagos with (security_invoker = true) as
 select c.periodo, c.clave, c.tipo,
   case c.tipo when 'fijo' then max(c.nombre) else coalesce(max(t.nombre_visible), max(c.nombre_pago)) end as nombre,
   max(c.emoji_pago) as emoji,
@@ -48,7 +48,7 @@ where c.periodo >= mes_actual()
 group by c.periodo, c.clave, c.tipo
 order by c.periodo, c.tipo, c.clave;
 
-create or replace view tablero_tarjeta as
+create or replace view tablero_tarjeta with (security_invoker = true) as
 select d.clave, d.periodo, d.nombre, coalesce(cat.emoji, '💳') as emoji,
   case when d.origen = 'servicio' then 'mensual' else d.detalle end as detalle,
   round(d.monto, 2) as monto, d.moneda, d.estado
@@ -57,7 +57,7 @@ where d.periodo >= mes_actual()
 order by d.periodo, d.clave, d.nombre;
 
 -- los últimos 100 movimientos, con un nombre legible y cómo se pagó
-create or replace view tablero_movimientos as
+create or replace view tablero_movimientos with (security_invoker = true) as
 select clave, fecha, tipo, descripcion, emoji, categoria, medio, monto, moneda, cotizacion from (
   select 'mov:' || m.id as clave, m.fecha, m.tipo,
     case
