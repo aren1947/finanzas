@@ -21,6 +21,9 @@ create or replace function registrar_gasto(p_origen text, p_fecha text, p_monto 
   p_tarjeta text default null, p_cuotas text default null, p_primer_mes text default null, p_etiqueta text default null)
 returns setof jsonb language plpgsql as $$
 begin
+  perform valida_fecha(p_fecha);
+  perform valida_monto(p_monto);
+  if p_forma = 'tarjeta' then perform valida_cuotas_tarjeta(p_cuotas, p_primer_mes); end if;
   insert into bronce_gastos (origen, fecha, monto, moneda, descripcion, categoria, medio, tarjeta, cuotas, primer_mes, texto_crudo, etiqueta)
   values (p_origen, p_fecha, p_monto, p_moneda, p_descripcion, coalesce(p_categoria, 'Otros'),
           case when p_forma = 'tarjeta' then 'tarjeta' else p_medio end, p_tarjeta, coalesce(p_cuotas, '1'),
@@ -35,6 +38,7 @@ create or replace function registrar_compartido(p_origen text, p_persona text, p
 returns setof jsonb language plpgsql as $$
 declare v_id integer;
 begin
+  perform valida_fecha(p_fecha);
   insert into bronce_compartidos (origen, fecha, persona, descripcion, categoria, total, pago, mi_parte, medio)
   values (p_origen, coalesce(p_fecha, hoy()::text), p_persona, p_descripcion, p_categoria, p_total, coalesce(p_pago, 'yo'),
           round(coalesce(p_mi_monto, p_total * coalesce(p_mi_porcentaje, 50) / 100.0), 2),
@@ -50,6 +54,8 @@ create or replace function registrar_fijo(p_origen text, p_nombre text, p_monto 
   p_categoria text default null, p_cobro text default 'debito', p_desde text default null)
 returns setof jsonb language plpgsql as $$
 begin
+  perform valida_monto(p_monto);
+  perform valida_mes(p_desde);
   insert into bronce_servicios (origen, nombre, monto, moneda, frecuencia, dia, categoria, medio, tarjeta, desde, texto_crudo)
   values (p_origen, p_nombre, p_monto, p_moneda, 'mensual', null, p_categoria,
           case when p_cobro = 'debito' then 'debito' else 'tarjeta' end,
@@ -62,6 +68,9 @@ create or replace function registrar_pago(p_origen text, p_fecha text, p_monto t
   p_tarjeta text default null, p_fijo text default null, p_mes text default null)
 returns setof jsonb language plpgsql as $$
 begin
+  perform valida_fecha(p_fecha);
+  perform valida_monto(p_monto);
+  perform valida_mes(p_mes);
   insert into bronce_pagos (origen, fecha, monto, moneda, tipo, tarjeta, servicio, mes, texto_crudo)
   values (p_origen, p_fecha, p_monto, p_moneda, case when p_tarjeta is not null then 'resumen' else 'servicio' end,
           p_tarjeta, p_fijo, p_mes, 'pago ' || p_mes);
@@ -72,6 +81,8 @@ end $$;
 create or replace function registrar_dolar(p_origen text, p_fecha text, p_valor text)
 returns setof jsonb language plpgsql as $$
 begin
+  perform valida_fecha(p_fecha);
+  perform valida_monto(p_valor);
   insert into bronce_dolar (origen, fecha, valor, texto_crudo) values (p_origen, p_fecha, p_valor, p_valor);
   return query select * from etl_resumen();
 end $$;

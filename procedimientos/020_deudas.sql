@@ -4,6 +4,8 @@ create or replace function registrar_deuda(p_origen text, p_fecha text, p_person
   p_moneda text default 'ARS', p_sentido text default 'me_deben')
 returns setof jsonb language plpgsql as $$
 begin
+  perform valida_fecha(p_fecha);
+  perform valida_monto(p_monto);
   insert into bronce_deudas (origen, fecha, persona, concepto, monto, moneda, sentido, texto_crudo)
   values (p_origen, p_fecha, p_persona, p_concepto, p_monto, p_moneda, p_sentido, p_concepto);
   return query select * from etl_resumen();
@@ -13,6 +15,7 @@ end $$;
 create or replace function saldar_deuda(p_origen text, p_deuda_id text, p_fecha text default null)
 returns setof jsonb language plpgsql as $$
 begin
+  perform valida_fecha(p_fecha);
   insert into bronce_saldos_deuda (origen, deuda_id, fecha, texto_crudo)
   values (p_origen, p_deuda_id, coalesce(p_fecha, hoy()::text), p_deuda_id);
   return query select * from etl_resumen();
@@ -30,6 +33,7 @@ end $$;
 create or replace function pagar_deuda(p_origen text, p_deuda_id integer, p_monto double precision, p_fecha text default null)
 returns setof jsonb language plpgsql as $$
 begin
+  perform valida_fecha(p_fecha);
   insert into bronce_pagos_deuda (origen, deuda_id, fecha, monto) values (p_origen, p_deuda_id, coalesce(p_fecha, hoy()::text), p_monto);
   perform correr_etl();
   return query select to_jsonb(t) from (
@@ -43,9 +47,11 @@ create or replace function compensar_deuda(p_origen text, p_deuda_id integer, p_
 returns setof jsonb language plpgsql as $$
 declare
   a record; b record;
-  v_fecha date := coalesce(p_fecha::date, hoy());
+  v_fecha date;
   v_mon text; v_tc double precision; ra double precision; rb double precision;
 begin
+  perform valida_fecha(p_fecha);
+  v_fecha := coalesce(p_fecha::date, hoy());
   select moneda, resta into a from tablero_deudas where clave = 'deuda:' || p_deuda_id;
   select moneda, resta into b from tablero_deudas where clave = 'deuda:' || p_contra_deuda_id;
   v_mon := coalesce(p_moneda, a.moneda);
