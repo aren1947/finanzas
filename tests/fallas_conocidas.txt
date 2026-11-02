@@ -1,0 +1,11 @@
+# Casos que hoy fallan a propósito: cada uno reproduce un hallazgo de docs/revision-2026-11.md.
+# Cuando se arregla uno, el runner avisa "¡ARREGLADO?!" y hay que sacarlo de esta lista.
+103_rls_escritura_directa     H3
+200_resumen_descripcion_repetida  H4
+201_resumen_dos_pagos         H5
+202_tarjeta_manual_y_pdf      H6
+207_pdf_cargado_dos_veces     H10
+208_foto_mensual              H12
+209_cuotas_iguales            H11
+210_sueldo_retencion_decimal  H13
+301_cuotas_cierran            H17
