@@ -8,8 +8,8 @@ using (
     fecha_ddmmaa(fecha_texto) as fecha,
     fecha_ddmmaa(vencimiento) as vencimiento,
     referencia,
-    case when cuota <> '' then ent(substr(cuota, 1, 2)) end as cuota_nro,
-    case when cuota <> '' then ent(substr(cuota, 4, 2)) end as cuota_total,
+    case when cuota <> '' then ent(split_part(cuota, '/', 1)) end as cuota_nro,
+    case when cuota <> '' then ent(split_part(cuota, '/', 2)) end as cuota_total,
     nullif(comprobante, '') as comprobante,
     num(replace(replace(pesos_texto, '.', ''), ',', '.')) as monto_ars,
     num(replace(replace(dolares_texto, '.', ''), ',', '.')) as monto_usd
