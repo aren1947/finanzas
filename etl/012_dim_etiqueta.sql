@@ -1,4 +1,4 @@
--- dim_etiqueta: Etiquetas libres para subcategorizar gastos (una persona o un contexto: Agus, amigos…), de lo que Tomás puso al cargar un gasto o un compartido.
+-- dim_etiqueta: Etiquetas libres para subcategorizar gastos (una persona o un contexto: amigos, trabajo…), de lo que Tomás puso al cargar un gasto o un compartido.
 -- Lee: bronce_compartidos, bronce_gastos. Clave: nombre.
 merge into dim_etiqueta t
 using (
