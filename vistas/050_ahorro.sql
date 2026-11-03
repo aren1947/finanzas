@@ -1,6 +1,6 @@
 -- Ahorro: cuánto entra, cuánto sale y cuánto sobra cada mes (real, en curso, proyectado), metas y dónde se va la plata.
 
-create or replace view plata_ahorro_metas as
+create or replace view plata_ahorro_metas with (security_invoker = true) as
 select m.nombre, m.monto, m.moneda, m.para, m.ya_tengo,
   (select to_char(min(x.cargado_en) at time zone 'America/Argentina/Buenos_Aires', 'YYYY-MM') from bronce_ahorro_metas x
    where lower(x.nombre) = lower(m.nombre)
@@ -9,7 +9,7 @@ from bronce_ahorro_metas m
 where m.id = (select max(y.id) from bronce_ahorro_metas y where lower(y.nombre) = lower(m.nombre)) and m.monto > 0;
 
 -- lo usual sale de los últimos 90 días (o desde el primer gasto): contado todos los meses, tarjeta desde el segundo mes
-create or replace view tablero_ahorro as
+create or replace view tablero_ahorro with (security_invoker = true) as
 with h as (
   select mes_actual() as mes, hoy() as hoy,
     extract(day from hoy())::double precision / extract(day from date_trunc('month', hoy()) + interval '1 month - 1 day')::double precision as ritmo,
@@ -62,7 +62,7 @@ from w
 order by k;
 
 -- cada meta: si llega a tiempo, cuándo llega, o cuánto recortar por mes
-create or replace view tablero_ahorro_metas as
+create or replace view tablero_ahorro_metas with (security_invoker = true) as
 with g as (
   select a.*,
     round(case when a.moneda = 'USD' then a.monto * (select valor from oro_dolar_vigente) else a.monto end, 2) as objetivo_ars,
@@ -89,7 +89,7 @@ from g join s on s.nombre = g.nombre
 order by g.para, g.nombre;
 
 -- dónde se va la plata por mes (lo usual de los últimos 90 días), con su límite si tiene
-create or replace view tablero_ahorro_categorias as
+create or replace view tablero_ahorro_categorias with (security_invoker = true) as
 with d as (
   select coalesce(case when min(fecha) is null then null
                        else greatest(hoy() - 90, date_trunc('month', min(fecha))::date) end, hoy()) as desde

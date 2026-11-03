@@ -23,7 +23,20 @@ aren-supabase subir ~/apps/finanzas etl             # después de cambiar un arc
 
 **Acceso desde apps** (`esquema/070_acceso.sql`): RLS en todas las tablas y vistas con `security_invoker`. Sin login no se ve
 nada; con un login de Google solo entran los mails de `_cuentas_habilitadas`, que maneja Aren. Después de crear una tabla o
-vista, volver a correr ese archivo.
+vista, volver a correr ese archivo. Cada vista de `vistas/` declara `with (security_invoker = true)` en su `create or replace`:
+sin eso, volver a subirla le saca la opción y pasa a leer como su dueño, sin RLS.
 
 Si editás un archivo de `etl/`, `vistas/` o `procedimientos/`, subilo (o pedíselo a Aren) con `aren-supabase subir`.
 Un cambio de tablas va como SQL aparte (`alter table …`) y después se refleja en `esquema/`.
+
+## Tests
+
+`tests/correr.sh` arma una base nueva por caso en un **Postgres 17 local** (con un stub mínimo de Supabase:
+roles `anon`/`authenticated`, `auth.jwt()`) y corre `tests/casos/*.sql` con datos inventados. Nunca contra Supabase.
+
+```sh
+PGHOST=/tmp PGPORT=55432 PGUSER=postgres tests/correr.sh          # todos
+PGHOST=/tmp PGPORT=55432 PGUSER=postgres tests/correr.sh 20       # los que tienen "20" en el nombre
+```
+
+Los casos de `tests/fallas_conocidas.txt` reproducen bugs abiertos de `docs/revision-2026-11.md` y se espera que fallen.

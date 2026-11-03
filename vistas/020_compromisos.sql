@@ -1,7 +1,7 @@
 -- Lo que viene a pagar en los próximos 7 meses: cada resumen de tarjeta con su detalle, y los fijos.
 
 -- el detalle de cada resumen de tarjeta: líneas de PDF, cuotas proyectadas, gastos con tarjeta cargados a mano y fijos con tarjeta
-create or replace view oro_resumenes_detalle as
+create or replace view oro_resumenes_detalle with (security_invoker = true) as
 with meses as (select mes_mas(mes_actual(), k) as periodo from generate_series(0, 6) as m(k)),
 ultimo_venc as (select coalesce(max(mes(vencimiento)), '0000-00') as mv from plata_lineas_tarjeta)
 select * from (
@@ -49,7 +49,7 @@ select * from (
 );
 
 -- cada pago del mes: un resumen por tarjeta (con su detalle) y cada fijo que no se paga con tarjeta
-create or replace view oro_compromisos_mes as
+create or replace view oro_compromisos_mes with (security_invoker = true) as
 with meses as (select mes_mas(mes_actual(), k) as periodo from generate_series(0, 6) as m(k))
 select d.periodo, d.clave, 'tarjeta' as tipo, t.nombre_visible as nombre_pago, '💳' as emoji_pago,
   d.nombre, d.emoji, d.detalle, d.moneda, d.monto,
